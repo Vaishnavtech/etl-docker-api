@@ -1,0 +1,8 @@
+services:
+  core_api:
+    build: .
+    container_name: "etl-docker-api"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./app:/app

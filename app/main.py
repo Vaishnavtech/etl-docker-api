@@ -165,7 +165,7 @@ async def import_data(request: ImportDataRequest):
 )
         
         # Initialize SQLAlchemy engine
-        engine = create_engine(conn_string)
+        engine = create_engine(conn_string, fast_executemany=True)  # Add this flag
         
         # Determine behavior based on options
         if_exists = 'fail'
@@ -191,7 +191,7 @@ async def import_data(request: ImportDataRequest):
             con=engine,
             if_exists=if_exists,
             index=False,
-            chunksize=7000,
+            chunksize=20000,
             schema=request.dbConfig.schemaName,
             dtype=column_types
         )

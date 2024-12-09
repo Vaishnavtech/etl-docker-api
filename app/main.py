@@ -143,12 +143,14 @@ async def import_data(request: ImportDataRequest):
                 df[header] = pd.to_numeric(df[header], errors='coerce')
             elif userSelectedType == 'Boolean':
                 df[header] = df[header].map({'True': True, 'False': False, '1': True, '0': False}).astype(bool)
-        
-        # Handle Year column as an example of Integer conversion
-        if 'Year' in df.columns:
-            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')  # Convert Year to numeric
-            df.dropna(subset=['Year'], inplace=True)  # Drop rows where Year is NaN
-            df['Year'] = df['Year'].astype(int)  # Convert back to integer
+            # Special handling for date columns
+            elif mssqlType == 'DATE':
+                try:
+                    # Try parsing the date in various formats
+                    df[header] = pd.to_datetime(df[header], errors='raise', format='%d-%m-%y').dt.strftime('%Y-%m-%d')
+                except ValueError:
+                    # If parsing fails, set to NaT (Not a Time)
+                    df[header] = pd.to_datetime(df[header], errors='coerce', format='%d-%m-%y').dt.strftime('%Y-%m-%d')
         
         # Create column mapping for SQLAlchemy
         column_types = {config['header'].strip(): get_sqlalchemy_type(config['mssqlType']) for config in request.columnConfig}
@@ -165,7 +167,7 @@ async def import_data(request: ImportDataRequest):
 )
         
         # Initialize SQLAlchemy engine
-        engine = create_engine(conn_string, fast_executemany=True)  # Add this flag
+        engine = create_engine(conn_string, fast_executemany=True)
         
         # Determine behavior based on options
         if_exists = 'fail'
